@@ -31,7 +31,7 @@ const ClubPage = () => {
         }
 
         if (data.logo) {
-          extractColor(`http://localhost:5001/pics/${data.logo}`);
+          extractColor(`/pics/${data.logo}`);
         }
       })
       .catch((error) => console.error("Error fetching club data:", error));
