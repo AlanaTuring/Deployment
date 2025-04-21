@@ -77,9 +77,24 @@ const Profile = () => {
                   <h3 style={styles.eventTitle}>{event.title}</h3>
                   <p style={styles.eventDescription}>{event.description}</p>
                   <p>
-                    🕒 {formatDate(event.date)} <br  />
-                      📍 {event.location}
-                  </p>
+  🕒 {event.time}
+  <br />
+  📍 {event.location}
+</p>
+{event.form && (
+  <p>
+    🔗{" "}
+    <a
+      href={event.form}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ color: "#3182ce", textDecoration: "underline" }}
+    >
+      Registration Link
+    </a>
+  </p>
+)}
+
                   <button
                     style={styles.deleteButton}
                     onClick={() => handleDelete(event._id)}

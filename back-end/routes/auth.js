@@ -58,6 +58,7 @@ router.post('/register', async (req, res) => {
 });
 
 // Student Login (with JWT token)
+// Student Login (with JWT token)
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -66,17 +67,20 @@ router.post('/login', async (req, res) => {
     let student = await Student.findOne({ email });
 
     if (student) {
-      console.log("Logged in as student:", student.email); // Log student login
+      console.log("Logged in as student:", student.email);
 
-      // Student Login Logic
       const isMatch = await bcrypt.compare(password, student.password);
       if (!isMatch) {
         return res.status(401).json({ success: false, message: 'Invalid credentials' });
       }
 
-      // Create JWT token for student
+      // Create JWT token for student (no managing field for students)
       const token = jwt.sign(
-        { id: student._id, email: student.email, role: 'student' }, // Set role to 'student'
+        {
+          id: student._id,
+          email: student.email,
+          role: 'student',
+        },
         process.env.JWT_SECRET || 'supersecretjwtkey',
         { expiresIn: '1d' }
       );
@@ -85,7 +89,7 @@ router.post('/login', async (req, res) => {
         success: true,
         message: 'Login successful',
         token,
-        role: 'student', // Send role as 'student'
+        role: 'student',
       });
     }
 
@@ -93,9 +97,10 @@ router.post('/login', async (req, res) => {
     let organizer = await Organizer.findOne({ email });
 
     if (organizer) {
-      console.log("Logged in as organizer:", organizer.email); // Log organizer login
+      console.log("Logged in as organizer:", organizer.email);
+      console.log("Organizer managing clubId:", organizer.managing);
 
-      // Organizer Login Logic
+
       const isMatch = await bcrypt.compare(password, organizer.password);
       if (!isMatch) {
         return res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -103,7 +108,12 @@ router.post('/login', async (req, res) => {
 
       // Create JWT token for organizer
       const token = jwt.sign(
-        { id: organizer._id, email: organizer.email, role: 'organizer' }, // Set role to 'organizer'
+        {
+          id: organizer._id,
+          email: organizer.email,
+          role: 'organizer',
+          managing: organizer.managing._id
+        },
         process.env.JWT_SECRET || 'supersecretjwtkey',
         { expiresIn: '1d' }
       );
@@ -112,7 +122,7 @@ router.post('/login', async (req, res) => {
         success: true,
         message: 'Login successful',
         token,
-        role: 'organizer', // Send role as 'organizer'
+        role: 'organizer',
       });
     }
 
@@ -122,6 +132,7 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+
 
 // Fetch Organizer by Email
 router.get('/organizer/:email', async (req, res) => {

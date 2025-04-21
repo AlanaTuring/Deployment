@@ -1,207 +1,245 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import backgroundImage from '../assets/AUB.png';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-const AddEventForm = ({ onAddEvent, clubId }) => {
+const AddEventForm = () => {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [clubId, setClubId] = useState('');
+  const [entityType, setEntityType] = useState('');
+
   const [eventDetails, setEventDetails] = useState({
     title: '',
     date: '',
     location: '',
     description: '',
     time: '',
-    club: clubId || '', // Ensure this is populated with the club ID from the parent
-    form: 'club', // Default form is set to 'club', but can be changed by the user
+    form: ''
   });
 
-  const handleChange = (e) => {
+  useEffect(() => {
+    const email = localStorage.getItem('userEmail');
+    if (!email) {
+      setError('User not logged in');
+      toast.error('User not logged in');
+      setLoading(false);
+      return;
+    }
+
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/organizers/${email}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch organizer');
+        return res.json();
+      })
+      .then(data => {
+        if (!data.managing || !data.type) {
+          throw new Error('Organizer not managing any entity');
+        }
+        setClubId(data.managing._id);
+        setEntityType(data.type.toLowerCase());
+      })
+      .catch(err => {
+        setError(err.message);
+        toast.error(err.message);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleChange = e => {
     const { name, value } = e.target;
-    setEventDetails((prevDetails) => ({
-      ...prevDetails,
-      [name]: value,
-    }));
+    setEventDetails(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    console.log("Sending Event Data:", eventDetails); // Debugging Step 1
+    if (!clubId) return;
+
+    const payload = {
+      ...eventDetails,
+      club: clubId,
+      type: entityType,
+      form: eventDetails.form || undefined
+    };
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/events`, { // Ensure this matches the correct backend URL
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/events`, {
         method: 'POST',
-        headers: {                     
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(eventDetails),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
 
-      console.log("Response Status:", response.status); // Debugging Step 2
-
-      if (response.ok) {
-        const newEvent = await response.json();
-        console.log("Server Response:", newEvent); // Debugging Step 3
-        onAddEvent(newEvent); // Update state in parent component
-
-        alert("Event added successfully! ✅"); // Show success message
-
-        setEventDetails({
-          title: '',
-          date: '',
-          location: '',
-          description: '',
-          time: '',
-          club: '',
-          form: 'club', // Reset form to default value after submitting
-        });
+      if (res.ok) {
+        toast.success('Event added successfully ✅');
+        setTimeout(() => navigate('/organizer'), 2000); // allow toast to show
       } else {
-        console.error("Error: Event not added. Check backend.");
-        alert(`Error adding event. Status: ${response.status} ❌`); // Enhanced error message
+        const err = await res.json();
+        toast.error(`Error: ${err.message || res.status}`);
       }
-    } catch (error) {
-      console.error("Fetch Error:", error);
-      alert("Network Error ❌");
+    } catch {
+      toast.error('Network error ❌');
     }
   };
 
+  if (loading) return (
+    <>
+      <ToastContainer />
+      <div style={styles.pageWrapper}>
+        <div style={styles.background}></div>
+        <div style={styles.container}>Loading...</div>
+      </div>
+    </>
+  );
+
+  if (error) return (
+    <>
+      <ToastContainer />
+      <div style={styles.pageWrapper}>
+        <div style={styles.background}></div>
+        <div style={styles.container}>{error}</div>
+      </div>
+    </>
+  );
+
   return (
-    <div style={styles.formContainer}>
-      <h2>Add Event</h2>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <div style={styles.inputContainer}>
-          <label style={styles.label}>Event Title:</label>
-          <input
-            type="text"
-            name="title"
-            value={eventDetails.title}
-            onChange={handleChange}
-            style={styles.input}
-            required
-          />
-        </div>
+    <>
+      <ToastContainer />
+      <div style={styles.pageWrapper}>
+        <div style={styles.background}></div>
+        <div style={styles.container}>
+          <h2 style={styles.title}>Add Event</h2>
+          <form onSubmit={handleSubmit} style={styles.form}>
+            {['title', 'description', 'date', 'location', 'time'].map(field => (
+              <div style={styles.inputGroup} key={field}>
+                <label style={styles.label}>
+                  {field.charAt(0).toUpperCase() + field.slice(1)}:
+                </label>
+                {field === 'description' ? (
+                  <textarea
+                    name={field}
+                    value={eventDetails[field]}
+                    onChange={handleChange}
+                    style={styles.textarea}
+                    required
+                  />
+                ) : (
+                  <input
+                    type={field === 'date' ? 'date' : field === 'time' ? 'time' : 'text'}
+                    name={field}
+                    value={eventDetails[field]}
+                    onChange={handleChange}
+                    style={styles.input}
+                    required
+                  />
+                )}
+              </div>
+            ))}
 
-        <div style={styles.inputContainer}>
-          <label style={styles.label}>Date:</label>
-          <input
-            type="date"
-            name="date"
-            value={eventDetails.date}
-            onChange={handleChange}
-            style={styles.input}
-            required
-          />
-        </div>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Registration URL (optional):</label>
+              <input
+                type="url"
+                name="form"
+                value={eventDetails.form}
+                onChange={handleChange}
+                style={styles.input}
+                placeholder="https://..."
+              />
+            </div>
 
-        <div style={styles.inputContainer}>
-          <label style={styles.label}>Location:</label>
-          <input
-            type="text"
-            name="location"
-            value={eventDetails.location}
-            onChange={handleChange}
-            style={styles.input}
-            required
-          />
+            <button type="submit" style={styles.button}>Add Event</button>
+          </form>
         </div>
-
-        <div style={styles.inputContainer}>
-          <label style={styles.label}>Description:</label>
-          <textarea
-            name="description"
-            value={eventDetails.description}
-            onChange={handleChange}
-            style={styles.input}
-            required
-          />
-        </div>
-
-        <div style={styles.inputContainer}>
-          <label style={styles.label}>Time:</label>
-          <input
-            type="text"
-            name="time"
-            value={eventDetails.time}
-            onChange={handleChange}
-            style={styles.input}
-            required
-          />
-        </div>
-
-        <div style={styles.inputContainer}>
-          <label style={styles.label}>Club ID (for validation):</label>
-          <input
-            type="text"
-            name="club"
-            value={eventDetails.club}
-            onChange={handleChange}
-            style={styles.input}
-            required
-          />
-        </div>
-
-        <div style={styles.inputContainer}>
-          <label style={styles.label}>Event Type:</label>
-          <select
-            name="form"
-            value={eventDetails.form}
-            onChange={handleChange}
-            style={styles.input}
-            required
-          >
-            <option value="club">Club</option>
-            <option value="society">Society</option>
-            <option value="faculty">Faculty</option>
-          </select>
-        </div>
-
-        <button type="submit" style={styles.submitButton}>Add Event</button>
-      </form>
-    </div>
+      </div>
+    </>
   );
 };
 
-// Styling for the form page
 const styles = {
-  formContainer: {
-    padding: '20px',
-    maxWidth: '600px',
-    margin: '0 auto',
-    textAlign: 'center',
-    backgroundColor: '#f9f9f9',
-    borderRadius: '8px',
-    boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+  pageWrapper: {
+    position: "relative",
+    minHeight: "100vh",
+    overflow: "hidden",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  background: {
+    backgroundImage: `url(${backgroundImage})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    filter: "blur(4px)",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    zIndex: -1
+  },
+  container: {
+    zIndex: 1,
+    width: "80%",
+    maxWidth: "600px",
+    margin: "40px auto",
+    padding: "30px",
+    backgroundColor: "rgba(255, 255, 255, 0.85)",
+    borderRadius: "15px",
+    boxShadow: "0 4px 15px rgba(0, 0, 0, 0.1)",
+    fontFamily: "Arial, sans-serif",
+    backdropFilter: "blur(2px)"
+  },
+  title: {
+    textAlign: "center",
+    color: "#2c3e50",
+    fontSize: "28px",
+    marginBottom: "30px",
+    fontWeight: "bold"
   },
   form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '15px',
-    alignItems: 'center',
+    display: "flex",
+    flexDirection: "column"
   },
-  inputContainer: {
-    width: '100%',
+  inputGroup: {
+    marginBottom: "20px"
   },
   label: {
-    display: 'block',
-    marginBottom: '8px',
-    fontSize: '16px',
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#2c3e50",
+    marginBottom: "8px",
+    fontSize: "16px"
   },
   input: {
-    width: '100%',
-    padding: '10px',
-    fontSize: '16px',
-    borderRadius: '5px',
-    border: '1px solid #ddd',
-    marginBottom: '10px',
-    boxSizing: 'border-box',
+    padding: "12px",
+    fontSize: "16px",
+    border: "2px solid #ccc",
+    borderRadius: "8px",
+    width: "100%",
+    transition: "border-color 0.3s"
   },
-  submitButton: {
-    padding: '12px 20px',
-    backgroundColor: '#923152', // Burgundy color
-    color: 'white',
-    border: 'none',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    transition: 'background-color 0.3s ease',
+  textarea: {
+    padding: "12px",
+    fontSize: "16px",
+    border: "2px solid #ccc",
+    borderRadius: "8px",
+    width: "100%",
+    height: "120px",
+    transition: "border-color 0.3s"
   },
+  button: {
+    padding: "14px",
+    backgroundColor: "#3498db",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    fontSize: "18px",
+    cursor: "pointer",
+    textAlign: "center",
+    transition: "background-color 0.3s",
+    marginTop: "20px"
+  }
 };
 
 export default AddEventForm;

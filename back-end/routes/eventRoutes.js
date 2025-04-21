@@ -6,6 +6,7 @@ const Faculty = require("../models/Faculty");
 
 const router = express.Router();
 
+
 // ✅ More specific route to get events for a club (avoids conflict)
 router.get("/club/:clubId/events", async (req, res) => {
   try {
@@ -19,7 +20,7 @@ router.get("/club/:clubId/events", async (req, res) => {
 // ✅ Get a specific event by eventId (no more conflict with the route above)
 router.get("/:eventId", async (req, res) => {
   try {
-    const event = await Event.findById(req.params.eventId).populate("club");
+    const event = await Event.findById(req.params.eventId);
     if (!event) {
       return res.status(404).json({ error: "Event not found" });
     }
@@ -29,15 +30,16 @@ router.get("/:eventId", async (req, res) => {
   }
 });
 
+
 // ✅ Create a new event
 router.post("/", async (req, res) => {
   try {
-    const { title, description, club, date, location, time, form } = req.body;
+    const { title, description, club, date, location, time, form, type } = req.body;
 
+    console.log(club);
     const newEvent = new Event({
       title,
       description,
-      club,
       date,
       location,
       time,
@@ -46,12 +48,13 @@ router.post("/", async (req, res) => {
 
     const savedEvent = await newEvent.save();
 
+    console.log(type);
     // Update the appropriate collection with the event ID
-    if (form === "club") {
+    if (type === "club") {
       await Club.updateOne({ _id: club }, { $push: { events: savedEvent._id } });
-    } else if (form === "society") {
+    } else if (type === "society") {
       await Society.updateOne({ _id: club }, { $push: { events: savedEvent._id } });
-    } else if (form === "faculty") {
+    } else if (type === "faculty") {
       await Faculty.updateOne({ _id: club }, { $push: { events: savedEvent._id } });
     }
 
@@ -74,14 +77,15 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+
 // ✅ Update an event
 router.put("/:id", async (req, res) => {
   try {
-    const { title, description, club, date, location, time, form } = req.body;
+    const { title, description, date, location, time, form } = req.body;
 
     const updatedEvent = await Event.findByIdAndUpdate(
       req.params.id,
-      { title, description, club, date, location, time, form },
+      { title, description, date, location, time, form },
       { new: true }
     );
 
@@ -94,5 +98,6 @@ router.put("/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 module.exports = router;

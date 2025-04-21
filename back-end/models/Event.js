@@ -7,8 +7,6 @@ const eventSchema = new mongoose.Schema({
   description: { type: String, required: true },
   time: { type: String, required: true },
   form: { type: String },
-  // Add the club reference here
-  club: { type: mongoose.Schema.Types.ObjectId, ref: "Club" },
 });
 
 // Create the Event model

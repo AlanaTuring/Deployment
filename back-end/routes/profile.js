@@ -27,7 +27,8 @@ router.get("/", async (req, res) => {
         description: event.description,
         location: event.location,
         time: event.time,
-        date: event.date
+        date: event.date,
+        form: event.form
       })),
     });
   } catch (err) {

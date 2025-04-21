@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import backgroundImage from '../assets/AUB.png';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const EditEvent = () => {
-  const { eventId } = useParams();  // Extract eventId from URL params
+  const { eventId } = useParams();
   const navigate = useNavigate();
 
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch event data using the eventId from the URL
   useEffect(() => {
     const fetchEventData = async () => {
       try {
@@ -21,7 +23,6 @@ const EditEvent = () => {
 
         const data = await response.json();
 
-        // Ensure time is in "HH:mm" format
         let formattedTime = data.time;
         if (formattedTime && formattedTime.length > 5) {
           formattedTime = formattedTime.slice(0, 5);
@@ -35,6 +36,7 @@ const EditEvent = () => {
         setLoading(false);
       } catch (error) {
         setError("Failed to fetch event data.");
+        toast.error("Failed to fetch event data ❌");
         setLoading(false);
       }
     };
@@ -43,11 +45,11 @@ const EditEvent = () => {
       fetchEventData();
     } else {
       setError("Invalid event ID.");
+      toast.error("Invalid event ID ❌");
       setLoading(false);
     }
   }, [eventId]);
 
-  // Handle input changes in the form
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEvent((prevEvent) => ({
@@ -56,7 +58,6 @@ const EditEvent = () => {
     }));
   };
 
-  // Handle form submission and update the event
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -73,148 +74,211 @@ const EditEvent = () => {
         throw new Error(`Failed to update event. Status: ${response.status}`);
       }
 
-      alert("Event updated successfully!");
-      navigate(`/events/${eventId}`);  // Navigate to the event page after successful update
+      toast.success("Event updated successfully! ✅");
+      setTimeout(() => navigate('/organizer'), 2000);
     } catch (error) {
       console.error(error);
-      alert("Failed to update event. Check console for details.");
+      toast.error("Failed to update event. Check console for details ❌");
     }
   };
 
-  if (loading) return <div>Loading event data...</div>;
-  if (error) return <div>{error}</div>;
-  if (!event) return <div>No event found.</div>;
+  if (loading) return (
+    <>
+      <ToastContainer />
+      <div style={styles.pageWrapper}>
+        <div style={styles.background}></div>
+        <div style={styles.container}>Loading event data...</div>
+      </div>
+    </>
+  );
+
+  if (error) return (
+    <>
+      <ToastContainer />
+      <div style={styles.pageWrapper}>
+        <div style={styles.background}></div>
+        <div style={styles.container}>{error}</div>
+      </div>
+    </>
+  );
+
+  if (!event) return (
+    <>
+      <ToastContainer />
+      <div style={styles.pageWrapper}>
+        <div style={styles.background}></div>
+        <div style={styles.container}>No event found.</div>
+      </div>
+    </>
+  );
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.title}>Edit Event</h2>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <label style={styles.label}>Title:</label>
-        <input
-          type="text"
-          name="title"
-          value={event.title || ""}
-          onChange={handleInputChange}
-          style={styles.input}
-          required
-        />
+    <>
+      <ToastContainer />
+      <div style={styles.pageWrapper}>
+        <div style={styles.background}></div>
+        <div style={styles.container}>
+          <h2 style={styles.title}>Edit Event</h2>
+          <form onSubmit={handleSubmit} style={styles.form}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Title:</label>
+              <input
+                type="text"
+                name="title"
+                value={event.title || ""}
+                onChange={handleInputChange}
+                style={styles.input}
+                required
+              />
+            </div>
 
-        <label style={styles.label}>Description:</label>
-        <textarea
-          name="description"
-          value={event.description || ""}
-          onChange={handleInputChange}
-          style={styles.textarea}
-          required
-        />
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Description:</label>
+              <textarea
+                name="description"
+                value={event.description || ""}
+                onChange={handleInputChange}
+                style={styles.textarea}
+                required
+              />
+            </div>
 
-        <label style={styles.label}>Club:</label>
-        <input
-          type="text"
-          name="club"
-          value={event.club || ""}
-          onChange={handleInputChange}
-          style={styles.input}
-          required
-        />
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Date:</label>
+              <input
+                type="date"
+                name="date"
+                value={event.date ? event.date.substring(0, 10) : ""}
+                onChange={handleInputChange}
+                style={styles.input}
+                required
+              />
+            </div>
 
-        <label style={styles.label}>Date:</label>
-        <input
-          type="date"
-          name="date"
-          value={event.date ? event.date.substring(0, 10) : ""}
-          onChange={handleInputChange}
-          style={styles.input}
-          required
-        />
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Location:</label>
+              <input
+                type="text"
+                name="location"
+                value={event.location || ""}
+                onChange={handleInputChange}
+                style={styles.input}
+                required
+              />
+            </div>
 
-        <label style={styles.label}>Location:</label>
-        <input
-          type="text"
-          name="location"
-          value={event.location || ""}
-          onChange={handleInputChange}
-          style={styles.input}
-          required
-        />
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Time:</label>
+              <input
+                type="time"
+                name="time"
+                value={event.time || ""}
+                onChange={handleInputChange}
+                style={styles.input}
+                required
+              />
+            </div>
 
-        <label style={styles.label}>Time:</label>
-        <input
-          type="time"
-          name="time"
-          value={event.time || ""}
-          onChange={handleInputChange}
-          style={styles.input}
-          required
-        />
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Form:</label>
+              <input
+                type="text"
+                name="form"
+                value={event.form || ""}
+                onChange={handleInputChange}
+                style={styles.input}
+              />
+            </div>
 
-        <label style={styles.label}>Form:</label>
-        <input
-          type="text"
-          name="form"
-          value={event.form || ""}
-          onChange={handleInputChange}
-          style={styles.input}
-          required
-        />
-
-        <button type="submit" style={styles.button}>Save Changes</button>
-      </form>
-    </div>
+            <button type="submit" style={styles.button}>Save Changes</button>
+          </form>
+        </div>
+      </div>
+    </>
   );
 };
 
 const styles = {
+  pageWrapper: {
+    position: "relative",
+    minHeight: "100vh",
+    overflow: "hidden",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  background: {
+    backgroundImage: `url(${backgroundImage})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    filter: "blur(4px)",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    zIndex: -1,
+  },
   container: {
-    maxWidth: "500px",
+    zIndex: 1,
+    width: "80%",
+    maxWidth: "600px",
     margin: "40px auto",
-    padding: "20px",
-    backgroundColor: "#fff",
-    borderRadius: "10px",
-    boxShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
+    padding: "30px",
+    backgroundColor: "rgba(255, 255, 255, 0.85)",
+    borderRadius: "15px",
+    boxShadow: "0 4px 15px rgba(0, 0, 0, 0.1)",
+    fontFamily: "Arial, sans-serif",
+    backdropFilter: "blur(2px)",
   },
   title: {
     textAlign: "center",
-    color: "#800020",
-    fontSize: "24px",
-    marginBottom: "20px",
+    color: "#2c3e50",
+    fontSize: "28px",
+    marginBottom: "30px",
+    fontWeight: "bold",
   },
   form: {
     display: "flex",
     flexDirection: "column",
   },
+  inputGroup: {
+    marginBottom: "20px",
+  },
   label: {
     fontWeight: "bold",
-    marginBottom: "5px",
-    color: "#800020",
+    color: "#2c3e50",
+    marginBottom: "8px",
+    fontSize: "16px",
   },
   input: {
-    padding: "10px",
-    marginBottom: "15px",
-    border: "2px solid #800020",
-    borderRadius: "5px",
+    padding: "12px",
     fontSize: "16px",
+    border: "2px solid #ccc",
+    borderRadius: "8px",
     width: "100%",
+    transition: "border-color 0.3s",
   },
   textarea: {
-    padding: "10px",
-    marginBottom: "15px",
-    border: "2px solid #800020",
-    borderRadius: "5px",
+    padding: "12px",
     fontSize: "16px",
+    border: "2px solid #ccc",
+    borderRadius: "8px",
     width: "100%",
-    height: "80px",
+    height: "120px",
+    transition: "border-color 0.3s",
   },
   button: {
-    padding: "12px",
-    backgroundColor: "#800020",
+    padding: "14px",
+    backgroundColor: "#3498db",
     color: "#fff",
     border: "none",
-    borderRadius: "5px",
+    borderRadius: "8px",
     fontSize: "18px",
     cursor: "pointer",
     textAlign: "center",
-    marginTop: "10px",
+    transition: "background-color 0.3s",
+    marginTop: "20px",
   },
 };
 
